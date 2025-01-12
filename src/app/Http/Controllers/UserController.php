@@ -16,7 +16,9 @@ class UserController extends Controller
      */
     public function index()
     {
-        return UserResource::collection(User::where('is_active', true)->get());
+        return response()->json([
+            'users' => UserResource::collection(User::where('is_active', true)->get()),
+        ], 200);
     }
 
     /**
@@ -25,30 +27,35 @@ class UserController extends Controller
     public function store(Request $request)
     {
         //Validation
-        $validated = $request->validate([
+        $request->validate([
             'name' => 'required|max:255',
             'email' => 'required',
             'password' => 'required',
             'country' => 'required|numeric',
         ]);
 
-        if ($validated) {
+        //Get country
+        $country = Country::find($request->country);
 
-            //Get country
-            $country = Country::find($request->country);
+        //Create User
+        $newUser = new User();
 
-            //Create User
-            $newUser = new User();
+        $newUser->name = $request->name;
+        $newUser->email = $request->email;
+        $newUser->password = $request->password;
+        $newUser->country()->associate($country);
+        $newUser->is_active = true;
 
-            $newUser->name = $request->name;
-            $newUser->email = $request->email;
-            $newUser->password = $request->password;
-            $newUser->country()->associate($country);
+        $newUser->save();
 
-            $newUser->save();
+        // return new UserResource($newUser);
+        return response()->json(
+            [
+                'user' => new UserResource($newUser),
+            ],
+            201
+        );
 
-            return new UserResource($newUser);
-        }
     }
 
     /**
@@ -56,7 +63,14 @@ class UserController extends Controller
      */
     public function show(User $user)
     {
-        return new UserResource(User::findOrFail($user->id));
+        $userResource = new UserResource(User::findOrFail($user->id));
+
+        $userData = $userResource->toArray(request());
+
+        return response()->json([
+            'user' => $userData,
+        ], (empty($userData) ? 404 : 200));
+
     }
 
     /**
@@ -65,33 +79,37 @@ class UserController extends Controller
     public function update(Request $request, User $user)
     {
 
-        $validated = $request->validate([
+        $request->validate([
             'country' => 'numeric',
         ]);
 
-        if ($validated) {
 
-            if ($request->filled('name')) {
-                $user->name =  $request->name;
-            }
-
-            if ($request->filled('email')) {
-                $user->email = $request->email;
-            }
-
-            if ($request->filled('password')) {
-                $user->password = $request->password;
-            }
-
-            if ($request->filled('country') && $request->country != $user->country_id) {
-                $country = Country::find($request->country);
-                $user->country()->associate($country);
-            }
-
-            $user->update();
-
-            return new UserResource($user);
+        if ($request->filled('name')) {
+            $user->name =  $request->name;
         }
+
+        if ($request->filled('email')) {
+            $user->email = $request->email;
+        }
+
+        if ($request->filled('password')) {
+            $user->password = $request->password;
+        }
+
+        if ($request->filled('country') && $request->country != $user->country_id) {
+            $country = Country::find($request->country);
+            $user->country()->associate($country);
+        }
+
+        $user->update();
+
+        return response()->json(
+            [
+                'user' => new UserResource($user),
+            ],
+            200
+        );
+
 
     }
 
@@ -101,5 +119,6 @@ class UserController extends Controller
     public function destroy(User $user)
     {
         $user->update(['is_active' => false]);
+        return response()->noContent(); //204 No Content
     }
 }
