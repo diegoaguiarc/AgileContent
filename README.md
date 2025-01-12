@@ -16,8 +16,8 @@ It is necessary to have installed: PHP (version >= 8), Composer, Docker (or Dock
 
 3. Run docker environment 
 >  ***docker-compose up --build -d***
-   1. Adjust the database info if necessary in the docker-composer.yml;
-   2. Before hise up the containers, make a copy of "/src/.env-example" and rename as ".env". After that set the database properties
+   - Adjust the database info if necessary in the docker-composer.yml;
+   - Before hise up the containers, make a copy of "/src/.env-example" and rename as ".env". After that set the database properties
 
 4. Check MySql database using phpMyAdmin:
 > ***http://localhost:8081/***
